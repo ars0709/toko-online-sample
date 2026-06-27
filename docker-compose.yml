@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: toko_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: toko
+      POSTGRES_PASSWORD: toko_secret
+      POSTGRES_DB: toko
+    ports:
+      # host:container — host port 5434 to avoid clashing with other local Postgres instances
+      - "5434:5432"
+    volumes:
+      - toko_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U toko -d toko"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: toko_redis
+    restart: unless-stopped
+    ports:
+      # host port 6380 to avoid clashing with a local Redis on 6379
+      - "6380:6379"
+    volumes:
+      - toko_redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  toko_pgdata:
+  toko_redisdata:
