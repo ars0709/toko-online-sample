@@ -8,6 +8,7 @@ import {
   payments,
   shipments,
 } from "@/lib/db/schema";
+import { dispatchEvent, type WebhookEvent } from "./webhooks";
 
 export async function listOrdersForUser(userId: string) {
   return db
@@ -61,7 +62,7 @@ export async function updateOrderStatus(
   actor: string,
   opts: { courier?: string; trackingNumber?: string; note?: string } = {},
 ) {
-  return db.transaction(async (tx) => {
+  const updated = await db.transaction(async (tx) => {
     const order = await tx.query.orders.findFirst({ where: eq(orders.id, orderId) });
     if (!order) throw new Error("ORDER_NOT_FOUND");
     if (!ALLOWED_TRANSITIONS[order.status]?.includes(toStatus)) {
@@ -115,6 +116,20 @@ export async function updateOrderStatus(
 
     return tx.query.orders.findFirst({ where: eq(orders.id, orderId) });
   });
+
+  // Fire outbound webhooks after commit.
+  if (updated) {
+    const payload = { orderId: updated.id, orderNumber: updated.orderNumber, status: updated.status };
+    const map: Record<string, WebhookEvent> = {
+      SHIPPED: "order.shipped",
+      DELIVERED: "order.delivered",
+      CANCELLED: "order.cancelled",
+      REFUNDED: "order.refunded",
+    };
+    const evt = map[toStatus];
+    if (evt) void dispatchEvent(evt, payload);
+  }
+  return updated;
 }
 
 export async function cancelOrderByUser(orderId: string, userId: string) {

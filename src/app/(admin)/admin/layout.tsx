@@ -7,6 +7,8 @@ import {
   TicketPercent,
   Star,
   KeyRound,
+  FileText,
+  Megaphone,
   Store,
 } from "lucide-react";
 import { requireAdmin } from "@/lib/auth/session";
@@ -18,6 +20,8 @@ const links = [
   { href: "/admin/products", label: "Produk", icon: Package },
   { href: "/admin/orders", label: "Pesanan", icon: ShoppingBag },
   { href: "/admin/coupons", label: "Kupon", icon: TicketPercent },
+  { href: "/admin/content", label: "Konten", icon: FileText },
+  { href: "/admin/promotions", label: "Promosi", icon: Megaphone },
   { href: "/admin/reviews", label: "Ulasan", icon: Star },
   { href: "/admin/api-keys", label: "API Keys", icon: KeyRound },
 ];

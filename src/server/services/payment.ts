@@ -7,6 +7,7 @@ import {
   orders,
   payments,
 } from "@/lib/db/schema";
+import { dispatchEvent } from "./webhooks";
 
 /**
  * Process a payment result. Called by the (signature-verified) webhook handler.
@@ -14,7 +15,7 @@ import {
  * - FAILED: order -> CANCELLED, release the reserved stock.
  */
 export async function processPaymentResult(orderId: string, result: "PAID" | "FAILED", method = "mock") {
-  return db.transaction(async (tx) => {
+  const outcome = await db.transaction(async (tx) => {
     const order = await tx.query.orders.findFirst({ where: eq(orders.id, orderId) });
     if (!order) throw new Error("ORDER_NOT_FOUND");
     if (order.status !== "PENDING_PAYMENT") {
@@ -87,9 +88,17 @@ export async function processPaymentResult(orderId: string, result: "PAID" | "FA
     }
 
     const updated = await tx.query.orders.findFirst({ where: eq(orders.id, orderId) });
-    // NOTE: outbound webhooks (order.paid / order.cancelled) would be dispatched here.
     return { order: updated!, alreadyProcessed: false };
   });
+
+  // Dispatch outbound webhooks after the transaction commits (fire-and-forget).
+  if (!outcome.alreadyProcessed) {
+    const o = outcome.order;
+    const payload = { orderId: o.id, orderNumber: o.orderNumber, grandTotal: o.grandTotal, status: o.status };
+    if (result === "PAID") void dispatchEvent("order.paid", payload);
+    else void dispatchEvent("payment.failed", payload);
+  }
+  return outcome;
 }
 
 export async function createPaymentIntentRecord(orderId: string) {

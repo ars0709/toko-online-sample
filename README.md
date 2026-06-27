@@ -110,6 +110,11 @@ Tolak bila timestamp lebih dari 5 menit (anti-replay). Lihat `src/lib/payments/i
 | `pnpm db:migrate` | terapkan migrations + index FTS |
 | `pnpm db:seed` | isi data demo |
 | `pnpm db:studio` | Drizzle Studio |
+| `pnpm test` | unit test (Vitest) — pricing & cart service |
+| `pnpm test:e2e` | e2e happy-path (Playwright): browse → cart → checkout → bayar → order |
+
+> **Webhook outbound**: pengiriman event (`order.paid`, `order.shipped`, `order.delivered`, `order.cancelled`, `order.refunded`, `payment.failed`) ke `webhook_endpoints` aktif dikirim **nyata via HTTP** (HMAC-signed, retry + dicatat di `webhook_deliveries`). Lihat `src/server/services/webhooks.ts`.
+> **Admin konten & promo**: kelola banner, halaman CMS, blog, FAQ, site settings, promo otomatis, dan flash sale di `/admin/content` & `/admin/promotions` — semua langsung tampil di storefront.
 
 ## ⚙️ Environment
 
